@@ -131,7 +131,7 @@ module.exports = function (app,app_data) {
   });
 
   // Route to view establishments with optional filter by stars
-  app.get("/restaurants", async (req, res) => {
+/*   app.get("/restaurants", async (req, res) => {
     try {
       const { stars } = req.query;
       let filter = {};
@@ -190,7 +190,52 @@ module.exports = function (app,app_data) {
       console.error("Error searching establishments:", error);
       res.status(500).send("Internal Server Error");
     }
-  });
+  }); */
+  app.get("/restaurants", async (req, res) => {
+    try {
+      const { stars, query } = req.query;
+      let filter = {};
+
+      // Handle search queries
+      if (query) {
+        filter.restoName = { $regex: new RegExp(query, "i") }; // Case-insensitive search
+      }
+
+      // Handle star ratings
+      if (stars) {
+        const starsArray = Array.isArray(stars) ? stars.map(Number) : [Number(stars)];
+        filter.main_rating = { $in: starsArray };
+      }
+
+      const restaurants = await getData("restaurants", filter);
+      const restaurant_row1 = restaurants.slice(0, 3);
+      const restaurant_row2 = restaurants.slice(3, 6);
+      const restaurant_row3 = restaurants.slice(6);
+
+      // Render the response based on AJAX request or full page render
+      if (req.headers['x-requested-with'] === 'XMLHttpRequest') {
+        res.render("partials/establishments", {
+          layout: false,
+          restaurant_row1,
+          restaurant_row2,
+          restaurant_row3
+        });
+      } else {
+        res.render("view-establishment", {
+          layout: "index",
+          title: "View Establishments",
+          restaurant_row1,
+          restaurant_row2,
+          restaurant_row3,
+          loginData: null,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching establishments:", error);
+      res.status(500).send("Internal Server Error");
+    }
+});
+
 
   // Route to create a new user
   app.post("/create-user", async (req, res) => {
