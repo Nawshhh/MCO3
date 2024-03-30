@@ -168,6 +168,29 @@ module.exports = function (app,app_data) {
       res.status(500).send("Internal Server Error");
     }
   });
+  app.get("/search", async (req, res) => {
+    try {
+      const { query } = req.query; // Assuming the search query parameter is named 'query'
+      let filter = {};
+      if (query) {
+        filter = { restoName: { $regex: new RegExp(query, "i") } }; // Case-insensitive search
+      }
+      const restaurants = await getData("restaurants", filter);
+      const restaurant_row1 = restaurants.slice(0, 3);
+      const restaurant_row2 = restaurants.slice(3, 6);
+      const restaurant_row3 = restaurants.slice(6);
+  
+      res.render("partials/establishments", {
+        layout: false, // This is a partial
+        restaurant_row1,
+        restaurant_row2,
+        restaurant_row3
+      });
+    } catch (error) {
+      console.error("Error searching establishments:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  });
 
   // Route to create a new user
   app.post("/create-user", async (req, res) => {
